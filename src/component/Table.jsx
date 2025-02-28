@@ -8,159 +8,148 @@ const Table = () => {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(config.url, {
-        method: "GET",
-      });
-      const result = await response.json();
-      setData(result.data || []);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(config.url);
+        const result = await response.json();
+        setData(result.data || []);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const handleSort = (column) => {
-    const isAsc = orderBy === column && order === "asc";
-    setOrder(isAsc ? "desc" : "asc");
+    setOrder(orderBy === column && order === "asc" ? "desc" : "asc");
     setOrderBy(column);
   };
 
   const sortData = (data) => {
     return [...data].sort((a, b) => {
-      if (orderBy === "start_date" || orderBy === "end_date") {
-        const dateA = new Date(a[orderBy]);
-        const dateB = new Date(b[orderBy]);
-        return order === "asc" ? dateA - dateB : dateB - dateA;
-      }
-
       const valueA = a[orderBy];
       const valueB = b[orderBy];
+
+      if (orderBy.includes("date")) {
+        return order === "asc"
+          ? new Date(valueA) - new Date(valueB)
+          : new Date(valueB) - new Date(valueA);
+      }
+
       if (valueA < valueB) return order === "asc" ? -1 : 1;
       if (valueA > valueB) return order === "asc" ? 1 : -1;
       return 0;
     });
   };
 
-  const filteeData = () => {
-    const filteredData = data.filter((data) => data.symbol.includes(search));
-    return sortData(filteredData);
+  const filterData = () => {
+    return data.filter((item) =>
+      item.symbol.toLowerCase().includes(search.toLowerCase())
+    );
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  // Make sure to add the correct dependencies to useMemo
-  const memoData = useMemo(filteeData, [data, search, sortData]);
+  const memoizedData = useMemo(
+    () => sortData(filterData()),
+    [data, search, order, orderBy]
+  );
 
   return (
     <>
       <h1>Data</h1>
-      <div>
-        <input
-          style={{
-            width: "400px",
-            height: "20px",
-            borderRadius: "12px",
-            padding: "10px 40px 10px 15px",
-            fontSize: "16px",
-          }}
-          type="text"
-          placeholder="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
-      <div
-        style={{
-          maxWidth: "100%",
-          overflowX: "auto",
-          margin: "20px",
-          display: "flex",
-          justifyContent: "center",
-        }}
-      >
-        <table
-          style={{
-            maxWidth: "100%",
-            borderCollapse: "collapse",
-            border: "1px solid #ddd",
-          }}
-        >
+      <input
+        style={styles.input}
+        type="text"
+        placeholder="Search"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+      <div style={styles.tableContainer}>
+        <table style={styles.table}>
           <thead>
-            <tr style={{ borderBottom: "1px solid #ddd" }}>
-              <th
-                style={{ padding: "20px 25px", textAlign: "left" }}
-                onClick={() => handleSort("symbol")}
-              >
-                Symbol
-                {orderBy === "symbol" && (order === "asc" ? " ↑" : " ↓")}
-              </th>
-              <th
-                style={{ padding: "20px 25px", textAlign: "left" }}
-                onClick={() => handleSort("timeframe")}
-              >
-                Time Frame
-              </th>
-              <th
-                style={{ padding: "20px 25px", textAlign: "left" }}
-                onClick={() => handleSort("start_date")}
-              >
-                Start Date
-                {orderBy === "start_date" && (order === "asc" ? " ↑" : " ↓")}
-              </th>
-              <th
-                style={{ padding: "20px 25px", textAlign: "left" }}
-                onClick={() => handleSort("end_date")}
-              >
-                End Date
-                {orderBy === "end_date" && (order === "asc" ? " ↑" : " ↓")}
-              </th>
-              <th style={{ padding: "20px 25px", textAlign: "left" }}>File</th>
+            <tr>
+              {[
+                { label: "Symbol", key: "symbol" },
+                { label: "Time Frame", key: "timeframe" },
+                { label: "Start Date", key: "start_date" },
+                { label: "End Date", key: "end_date" },
+                { label: "File", key: "file" },
+              ].map(({ label, key }) => (
+                <th key={key} style={styles.th} onClick={() => handleSort(key)}>
+                  {label} {orderBy === key && (order === "asc" ? "↑" : "↓")}
+                </th>
+              ))}
             </tr>
           </thead>
-
-          {loading && <p>Loading....</p>}
           <tbody>
-            {memoData.map((row, index) => (
-              <tr key={index} style={{ borderBottom: "1px solid #ddd" }}>
-                <td style={{ padding: "20px 25px", textAlign: "left" }}>
-                  {row.symbol}
-                </td>
-                <td style={{ padding: "20px 25px", textAlign: "left" }}>
-                  {row.timeframe}
-                </td>
-                <td style={{ padding: "20px 25px", textAlign: "left" }}>
-                  {row.start_date}
-                </td>
-                <td style={{ padding: "20px 25px", textAlign: "left" }}>
-                  {row.end_date}
-                </td>
-                <td style={{ padding: "20px 25px", textAlign: "left" }}>
-                  <button
-                    style={{
-                      cursor: "pointer",
-                      backgroundColor: "Blue",
-                      border: "none",
-                      borderRadius: "9px",
-                      color: "white",
-                      height: "30px",
-                    }}
-                  >
-                    {row.file}
-                  </button>
+            {loading ? (
+              <tr>
+                <td colSpan={5} style={styles.loading}>
+                  Loading...
                 </td>
               </tr>
-            ))}
+            ) : (
+              memoizedData.map((row, index) => (
+                <tr key={index} style={styles.tr}>
+                  <td style={styles.td}>{row.symbol}</td>
+                  <td style={styles.td}>{row.timeframe}</td>
+                  <td style={styles.td}>{row.start_date}</td>
+                  <td style={styles.td}>{row.end_date}</td>
+                  <td style={styles.td}>
+                    <button style={styles.button}>{row.file}</button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
     </>
   );
+};
+
+const styles = {
+  input: {
+    width: "400px",
+    height: "40px",
+    borderRadius: "12px",
+    padding: "10px 15px",
+    fontSize: "16px",
+    marginBottom: "20px",
+  },
+  tableContainer: {
+    maxWidth: "100%",
+    overflowX: "auto",
+    display: "flex",
+    justifyContent: "center",
+  },
+  table: {
+    borderCollapse: "collapse",
+    border: "1px solid #ddd",
+    width: "100%",
+  },
+  th: {
+    padding: "20px 25px",
+    textAlign: "left",
+    cursor: "pointer",
+  },
+  tr: { borderBottom: "1px solid #ddd" },
+  td: { padding: "20px 25px", textAlign: "left" },
+  button: {
+    cursor: "pointer",
+    backgroundColor: "blue",
+    color: "white",
+    border: "none",
+    borderRadius: "9px",
+    height: "30px",
+  },
+  loading: {
+    textAlign: "center",
+    padding: "20px",
+  },
 };
 
 export default memo(Table);

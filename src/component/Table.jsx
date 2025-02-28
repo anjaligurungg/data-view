@@ -12,7 +12,12 @@ const Table = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await fetch(config.url);
+        const response = await fetch(config.url, {
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Content-Type": "application/json",
+          },
+        });
         const result = await response.json();
         setData(result.data || []);
       } catch (error) {

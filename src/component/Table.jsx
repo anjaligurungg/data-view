@@ -55,7 +55,7 @@ const Table = () => {
   }, []);
 
   // Make sure to add the correct dependencies to useMemo
-  const memoData = useMemo(filteeData, [data, order, orderBy, search]);
+  const memoData = useMemo(filteeData, [data, search, sortData]);
 
   return (
     <>

@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useMemo, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import config from "../config/Config";
 
 const Table = () => {
@@ -29,32 +29,35 @@ const Table = () => {
     setOrderBy(column);
   };
 
-  const sortData = (data) => {
-    return [...data].sort((a, b) => {
-      const valueA = a[orderBy];
-      const valueB = b[orderBy];
+  const sortData = useCallback(
+    (data) => {
+      return [...data].sort((a, b) => {
+        const valueA = a[orderBy];
+        const valueB = b[orderBy];
 
-      if (orderBy.includes("date")) {
-        return order === "asc"
-          ? new Date(valueA) - new Date(valueB)
-          : new Date(valueB) - new Date(valueA);
-      }
+        if (orderBy.includes("date")) {
+          return order === "asc"
+            ? new Date(valueA) - new Date(valueB)
+            : new Date(valueB) - new Date(valueA);
+        }
 
-      if (valueA < valueB) return order === "asc" ? -1 : 1;
-      if (valueA > valueB) return order === "asc" ? 1 : -1;
-      return 0;
-    });
-  };
+        if (valueA < valueB) return order === "asc" ? -1 : 1;
+        if (valueA > valueB) return order === "asc" ? 1 : -1;
+        return 0;
+      });
+    },
+    [order, orderBy]
+  );
 
-  const filterData = () => {
+  const filterData = useCallback(() => {
     return data.filter((item) =>
       item.symbol.toLowerCase().includes(search.toLowerCase())
     );
-  };
+  }, [data, search]);
 
   const memoizedData = useMemo(
     () => sortData(filterData()),
-    [data, search, order, orderBy]
+    [sortData, filterData]
   );
 
   return (
